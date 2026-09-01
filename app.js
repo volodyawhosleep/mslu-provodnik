@@ -144,6 +144,28 @@ function setupInstallHint() {
   };
 }
 
+
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const meta = document.getElementById('themeColor');
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#0b1224');
+  const btn = document.getElementById('themeBtn');
+  if (btn) {
+    btn.textContent = theme === 'light' ? '◐' : '◑';
+    btn.setAttribute('aria-label', theme === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему');
+  }
+  try { localStorage.setItem('theme', theme); } catch (e) {}
+}
+function setupTheme() {
+  applyTheme(currentTheme());
+  const btn = document.getElementById('themeBtn');
+  if (!btn) return;
+  btn.onclick = () => applyTheme(currentTheme() === 'light' ? 'dark' : 'light');
+}
+
 $('backBtn').onclick = () => {
   $('search').value = '';
   state.q = '';
@@ -151,6 +173,7 @@ $('backBtn').onclick = () => {
 };
 
 $('search').addEventListener('input', (e) => search(e.target.value));
+setupTheme();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
@@ -164,6 +187,7 @@ fetch('./data.json?v=2')
     });
     state.data = data;
     setupInstallHint();
+    setupTheme();
     renderHome();
   })
   .catch(() => {

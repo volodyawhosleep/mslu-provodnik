@@ -1,4 +1,4 @@
-const VERSION = 'mslu-provodnik-v2';
+const VERSION = 'mslu-provodnik-v3';
 const PRECACHE = [
   './',
   './index.html',
