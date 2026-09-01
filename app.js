@@ -92,7 +92,7 @@ function openMap(buildingId, floorId, fromSearch) {
   });
   const img = $('plan');
   img.alt = `${state.building.title}, ${state.floor.label}`;
-  img.src = `./${state.floor.file}`;
+  img.src = './' + String(state.floor.file).replace(/^floors\//, '');
   if (navigator.serviceWorker && navigator.serviceWorker.controller) {
     // runtime cache happens in sw on fetch
   }
