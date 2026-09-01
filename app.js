@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const state = { data: null, building: null, floor: null, q: '' };
+const state = { data: null, building: null, floor: null, room: null, q: '' };
 
 function floorTitle(building, floorId) {
   const f = building.floors.find((x) => String(x.id) === String(floorId));
@@ -15,6 +15,10 @@ function show(view) {
 }
 
 function setTitle(text) { $('pageTitle').textContent = text; }
+
+function planFile(path) {
+  return './' + String(path || '').replace(/^floors\//, '');
+}
 
 function renderHome() {
   setTitle('Проводник');
@@ -38,6 +42,7 @@ function renderHome() {
 function openBuilding(id) {
   state.building = state.data.buildings.find((b) => b.id === id);
   state.floor = state.building.floors[0];
+  state.room = null;
   setTitle(state.building.short);
   show('buildingView');
   const rooms = state.data.rooms.filter((r) => r.building === id);
@@ -61,7 +66,7 @@ function openBuilding(id) {
 
 function roomCard(r) {
   const b = state.data.buildings.find((x) => x.id === r.building);
-  return `<button class="card" data-room="${r.building}|${r.floor}|${encodeURIComponent(r.label)}">
+  return `<button class="card" data-room="${r.id}">
     <div class="row">
       <div>
         <div class="room-label">${r.label}</div>
@@ -73,17 +78,20 @@ function roomCard(r) {
 
 function bindRoom(btn) {
   btn.onclick = () => {
-    const [building, floor] = btn.dataset.room.split('|');
-    openMap(building, floor, true);
+    const room = state.data.rooms.find((r) => r.id === btn.dataset.room);
+    if (!room) return;
+    openMap(room.building, room.floor, room.id);
   };
 }
 
-function openMap(buildingId, floorId, fromSearch) {
+function openMap(buildingId, floorId, roomId) {
   state.building = state.data.buildings.find((b) => b.id === buildingId);
   state.floor = state.building.floors.find((f) => String(f.id) === String(floorId)) || state.building.floors[0];
+  state.room = roomId ? state.data.rooms.find((r) => r.id === roomId) : null;
   setTitle(state.building.short);
   show('mapView');
-  $('mapMeta').textContent = `${state.building.title} · ${state.floor.label}`;
+  const roomBit = state.room ? ` · ${state.room.label}` : '';
+  $('mapMeta').textContent = `${state.building.title} · ${state.floor.label}${roomBit}`;
   $('floorChips').innerHTML = state.building.floors.map((f) =>
     `<button class="chip ${String(f.id) === String(state.floor.id) ? 'active' : ''}" data-floor="${f.id}">${f.label}</button>`
   ).join('');
@@ -91,10 +99,16 @@ function openMap(buildingId, floorId, fromSearch) {
     chip.onclick = () => openMap(buildingId, chip.dataset.floor);
   });
   const img = $('plan');
-  img.alt = `${state.building.title}, ${state.floor.label}`;
-  img.src = './' + String(state.floor.file).replace(/^floors\//, '');
-  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-    // runtime cache happens in sw on fetch
+  const highlighted = state.room && state.room.hl;
+  img.alt = highlighted
+    ? `${state.room.label}, ${state.building.title}, ${state.floor.label}`
+    : `${state.building.title}, ${state.floor.label}`;
+  img.src = highlighted ? ('./' + state.room.hl) : planFile(state.floor.file);
+  const hint = $('mapHint');
+  if (hint) {
+    hint.textContent = highlighted
+      ? 'Аудитория подсвечена на плане, как в приложении для Android. Щипком можно приблизить.'
+      : 'Щипком можно приблизить план. Номера комнат подписаны на карте.';
   }
 }
 
@@ -142,7 +156,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
 }
 
-fetch('./data.json')
+fetch('./data.json?v=2')
   .then((r) => r.json())
   .then((data) => {
     data.buildings.forEach((b) => {

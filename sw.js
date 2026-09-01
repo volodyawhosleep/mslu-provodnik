@@ -1,13 +1,11 @@
-const VERSION = 'mslu-provodnik-v1';
+const VERSION = 'mslu-provodnik-v2';
 const PRECACHE = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './data.json',
-  './manifest.json',
-  './icons/apple-touch-icon.png',
-  './icons/icon-192.png'
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
